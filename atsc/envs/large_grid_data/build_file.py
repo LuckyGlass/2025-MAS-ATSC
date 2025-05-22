@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+Modify main() to support specifying output dir.
+
 build *.xml files for a large 5 x 5 network
 w/ the traffic dynamics modified from the following paper:
 
@@ -8,6 +10,7 @@ regional reinforcement learning." American Control Conference (ACC), 2016. IEEE,
 
 @author: Tianshu Chu
 """
+import argparse
 import numpy as np
 import os
 
@@ -409,34 +412,37 @@ def output_tls(tls, phase):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('output_dir')
+    args = parser.parse_args()
     # nod.xml file
     node = '  <node id="%s" x="%.2f" y="%.2f" type="%s"/>\n'
-    write_file('./exp.nod.xml', output_nodes(node))
+    write_file(os.path.join(args.output_dir, 'exp.nod.xml'), output_nodes(node))
 
     # typ.xml file
-    write_file('./exp.typ.xml', output_road_types())
+    write_file(os.path.join(args.output_dir, 'exp.typ.xml'), output_road_types())
 
     # edg.xml file
     edge = '  <edge id="%s" from="%s" to="%s" type="%s"/>\n'
-    write_file('./exp.edg.xml', output_edges(edge))
+    write_file(os.path.join(args.output_dir, 'exp.edg.xml'), output_edges(edge))
 
     # con.xml file
     con = '  <connection from="%s" to="%s" fromLane="%d" toLane="%d"/>\n'
-    write_file('./exp.con.xml', output_connections(con))
+    write_file(os.path.join(args.output_dir, 'exp.con.xml'), output_connections(con))
 
     # tls.xml file
     tls = '  <tlLogic id="%s" programID="0" offset="0" type="static">\n'
     phase = '    <phase duration="%d" state="%s"/>\n'
-    write_file('./exp.tll.xml', output_tls(tls, phase))
+    write_file(os.path.join(args.output_dir, 'exp.tll.xml'), output_tls(tls, phase))
 
     # net config file
-    write_file('./exp.netccfg', output_netconfig())
+    write_file(os.path.join(args.output_dir, 'exp.netccfg'), output_netconfig())
 
     # generate net.xml file
-    os.system('netconvert -c exp.netccfg')
+    os.system('netconvert -c ' + os.path.join(args.output_dir, 'exp.netccfg'))
 
     # raw.rou.xml file
-    write_file('./exp.rou.xml', output_flows(1000, 2000, 0.2))
+    write_file(os.path.join(args.output_dir, 'exp.rou.xml'), output_flows(1000, 2000, 0.2))
 
     # generate rou.xml file
     # os.system('jtrrouter -n exp.net.xml -r exp.raw.rou.xml -o exp.rou.xml')
@@ -444,10 +450,10 @@ def main():
     # add.xml file
     ild = '  <laneAreaDetector file="ild.out" freq="1" id="%s_%d" lane="%s_%d" pos="-50" endPos="-1"/>\n'
     # ild_in = '  <inductionLoop file="ild_out.out" freq="15" id="ild_in:%s" lane="%s_0" pos="10"/>\n'
-    write_file('./exp.add.xml', output_ild(ild))
+    write_file(os.path.join(args.output_dir, 'exp.add.xml'), output_ild(ild))
 
     # config file
-    write_file('./exp.sumocfg', output_config())
+    write_file(os.path.join(args.output_dir, 'exp.sumocfg'), output_config())
 
 if __name__ == '__main__':
     main()
