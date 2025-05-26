@@ -2,7 +2,6 @@
 IA2C collection of agents, implemented with LSTM.
 @author: Yansheng Mao
 """
-import numpy as np
 import torch
 from dataclasses import dataclass, field
 from random import shuffle

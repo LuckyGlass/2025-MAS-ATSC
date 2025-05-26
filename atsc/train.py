@@ -3,10 +3,8 @@ Training framework for ATSC.
 @author: Yansheng Mao
 """
 import torch
-from dataclasses import dataclass, field
-from envs.atsc_env import TrafficSimulator
-from typing import List
 from .config import ATSCArguments
+from .envs.atsc_env import TrafficSimulator
 from .models import ATSCAgentCollection, ReplayBuffer
 
 

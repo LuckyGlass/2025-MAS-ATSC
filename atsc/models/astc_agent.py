@@ -2,10 +2,9 @@
 Agent framework (`ATSCAgentCollection`) for ATSC.
 @author: Yansheng Mao
 """
-import numpy as np
 import torch
 from abc import abstractmethod, ABC
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 
 class ReplayBuffer(ABC):
