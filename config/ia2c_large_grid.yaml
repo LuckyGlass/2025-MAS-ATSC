@@ -2,6 +2,7 @@
 base_dir: debug
 total_step: 1000000
 train_steps: 1000
+max_episode_steps: 100
 gamma: 0.95
 env_type: large_grid
 env_config_path: config/config_ia2c_grid.ini

@@ -3,6 +3,7 @@ Training framework for ATSC.
 @author: Yansheng Mao
 """
 import torch
+import tqdm
 from .config import ATSCArguments
 from .envs.atsc_env import TrafficSimulator
 from .models import ATSCAgentCollection, ReplayBuffer
@@ -21,16 +22,19 @@ def explore(model: ATSCAgentCollection, args: ATSCArguments, env: TrafficSimulat
         next_observation = [torch.from_numpy(o).to(dtype=torch.float32, device=args.device) for o in next_observation]  # Add time dim
         global_rewards.append(global_reward)
         replay_buffer.env_side(next_observation, reward, done)
-        if done:
+        if done or sampled_steps >= args.max_episode_steps:
             break
         observation = next_observation
+    env.terminate()
     return global_rewards, sampled_steps
 
 
 def train(args: ATSCArguments, env: TrafficSimulator, model: ATSCAgentCollection, replay_buffer: ReplayBuffer):
     cur_steps = 0
-    while cur_steps < args.total_steps:
-        while len(replay_buffer) <= args.train_steps:
-            global_rewards, sampled_steps = explore(model, args, env, replay_buffer)
-            cur_steps += sampled_steps
-        model.train(replay_buffer, args)
+    with tqdm.tqdm(total=args.total_steps, desc="Total steps") as pbar:
+        while cur_steps < args.total_steps:
+            while len(replay_buffer) <= args.train_steps:
+                global_rewards, sampled_steps = explore(model, args, env, replay_buffer)
+                cur_steps += sampled_steps
+                pbar.update(sampled_steps)
+            model.train(replay_buffer, args)
