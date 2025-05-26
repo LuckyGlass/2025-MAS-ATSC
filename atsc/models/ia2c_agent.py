@@ -11,13 +11,14 @@ from typing import List, Optional
 from .astc_agent import ATSCAgentCollection, ReplayBuffer
 from .model_utils import SiluMLP
 from ..config import ATSCArguments
+from ..envs.atsc_env import TrafficSimulator
 
 
 @dataclass
 class IA2CArguments(ATSCArguments):
-    num_agents: int = field(default=None)
-    observation_dims: List[int] = field(default=None)
-    action_dims: List[int] = field(default=None)
+    num_agents: int = field(default=None, metadata={'help': "The number of agents in the collection. It is initiated by calling `init_from_env`."})
+    observation_dims: List[int] = field(default=None, metadata={'help': "The dimension of observations of the agents. It is initiated by calling `init_from_env`."})
+    action_dims: List[int] = field(default=None, metadata={'help': "The number of valid actions (phases) of the agents. It is initiated by calling `init_from_env`."})
     lstm_hidden_dim: int = field(default=None)
     policy_proj_hidden_dims: List[int] = field(default=None)
     value_proj_hidden_dims: List[int] = field(default=None)
@@ -29,6 +30,12 @@ class IA2CArguments(ATSCArguments):
     value_learning_rate: float = field(default=1e-3)
     batch_size: int = field(default=200)
     regularization_scale: float = field(default=0.01)
+    
+    def init_from_env(self, env: TrafficSimulator):
+        super().init_from_env(env)
+        self.num_agents = len(env.nodes)
+        self.observation_dims = env.n_s_ls
+        self.action_dims = env.n_a_ls
 
 
 class IA2CReplayBuffer(ReplayBuffer):
@@ -42,6 +49,10 @@ class IA2CReplayBuffer(ReplayBuffer):
         self.action: List[torch.LongTensor] = []
         self.prev_hidden_state: List[List[torch.Tensor]] = []
         self.prev_cell_state: List[List[torch.Tensor]] = []
+        self.size = 0
+    
+    def reset(self):
+        del self.next_observation[:], self.reward[:], self.observation[:], self.action[:], self.prev_cell_state[:], self.prev_hidden_state[:]
         self.size = 0
 
     def env_side(self, next_observation: List[torch.Tensor], reward: torch.Tensor, done: bool):
@@ -144,3 +155,4 @@ class IA2CAgents(ATSCAgentCollection):
                 loss.backward()
                 policy_side_optimizer.step()
                 policy_side_optimizer.zero_grad()
+        replay_buffer.reset()

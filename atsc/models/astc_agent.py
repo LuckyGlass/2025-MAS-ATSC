@@ -17,7 +17,7 @@ class ReplayBuffer(ABC):
         pass
     
     @abstractmethod
-    def size(self) -> int:
+    def __len__(self) -> int:
         pass
 
 
@@ -29,12 +29,6 @@ class ATSCAgentCollection(ABC):
     """
     def __init__(self):
         pass
-
-    @abstractmethod
-    def __len__(self):
-        """
-        Reset policy model hidden states (for LSTM)
-        """
     
     @abstractmethod
     def forward(self, observation: List[torch.Tensor], replay_buffer: Optional[ReplayBuffer] = None) -> List[int]:

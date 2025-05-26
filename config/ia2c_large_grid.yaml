@@ -1,0 +1,23 @@
+# General settings
+base_dir: debug
+total_step: 1000000
+train_steps: 1000
+gamma: 0.95
+env_type: large_grid
+env_config_path: config/config_ia2c_grid.ini
+env_simulator_port: 4
+
+# Agent settings
+lstm_hidden_dim: 128
+policy_proj_hidden_dims: [128]
+value_proj_hidden_dims: [128]
+device: cuda
+
+# Training settings
+num_train_policy_epochs: 1
+num_train_value_epochs_per_policy_update: 2
+encoder_learning_rate: 1.0e-4
+policy_learning_rate: 1.0e-4
+value_learning_rate: 1.0e-3
+batch_size: 200
+regularization_scale: 0.01

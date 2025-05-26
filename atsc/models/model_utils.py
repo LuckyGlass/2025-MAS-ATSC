@@ -5,6 +5,7 @@ from typing import List
 
 class SiluMLP(nn.Module):
     def __init__(self, input_dim: int, hidden_dims: List[int], output_dim: int, device: str = 'cuda'):
+        super().__init__()
         self.layers = nn.ModuleList()
         self.layers.append(nn.Linear(input_dim, hidden_dims[0], device=device))
         for h1, h2 in zip(hidden_dims[:-1], hidden_dims[1:]):
