@@ -1,0 +1,5 @@
+sumolib==1.23.1
+traci==1.23.1
+pandas==2.2.3
+seaborn==0.13.2
+configparser==7.2.0
