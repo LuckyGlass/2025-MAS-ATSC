@@ -8,16 +8,17 @@ from .envs.atsc_env import TrafficSimulator
 from .models import ATSCAgentCollection, ReplayBuffer
 
 
+@torch.no_grad()
 def explore(model: ATSCAgentCollection, args: ATSCArguments, env: TrafficSimulator, replay_buffer: ReplayBuffer):
     observation = env.reset()
-    observation = [torch.from_numpy(o) for o in observation]
+    observation = [torch.from_numpy(o).to(dtype=torch.float32, device=args.device) for o in observation]  # Add time dim
     global_rewards = []
     sampled_steps = 0
     while True:
         sampled_steps += 1
         action = model.forward(observation)
         next_observation, reward, done, global_reward = env.step(action)
-        next_observation = [torch.from_numpy(o) for o in next_observation]
+        next_observation = [torch.from_numpy(o).to(dtype=torch.float32, device=args.device) for o in next_observation]  # Add time dim
         global_rewards.append(global_reward)
         replay_buffer.env_side(next_observation, reward, done)
         if done:

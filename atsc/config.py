@@ -8,6 +8,7 @@ from .envs.atsc_env import TrafficSimulator
 @dataclass
 class ATSCArguments:
     base_dir: str = field(default=None, metadata={'help': "The dir to save the models."})
+    device: str = field(default='cuda')
     total_steps: int = field(default=1000000, metadata={'help': "The total number of sampling steps during training."})
     train_steps: int = field(default=1000, metadata={'help': "The interval (steps) of training."})
     gamma: float = field(default=0.95, metadata={'help': "The discount factor."})

@@ -22,7 +22,6 @@ class IA2CArguments(ATSCArguments):
     lstm_hidden_dim: int = field(default=None)
     policy_proj_hidden_dims: List[int] = field(default=None)
     value_proj_hidden_dims: List[int] = field(default=None)
-    device: str = field(default='cuda')
     num_train_policy_epochs: int = field(default=1)
     num_train_value_epochs_per_policy_update: int = field(default=3)
     encoder_learning_rate: float = field(default=1e-4)
@@ -104,8 +103,8 @@ class IA2CAgents(ATSCAgentCollection):
         for i in range(self.num_agents):
             prev_hidden_state.append(self.lstm_hidden_states[i].detach())
             prev_cell_state.append(self.lstm_cell_states[i].detach())
-            restored_observation.append(observation[i].detach())
-            _, (self.lstm_hidden_states[i], self.lstm_cell_states[i]) = self.encoders[i].forward(observation[i], (prev_hidden_state, prev_cell_state))
+            restored_observation.append(observation[i].detach().unsqueeze(0))
+            _, (self.lstm_hidden_states[i], self.lstm_cell_states[i]) = self.encoders[i].forward(observation[i].unsqueeze(0), (self.lstm_hidden_states[i], self.lstm_cell_states[i]))
             policy = self.policy_projs[i].forward(self.lstm_hidden_states[i])[0]  # Remove batch dim
             action.append(torch.distributions.Categorical(policy).sample(1).item())  # A scalar
         if replay_buffer is not None:
