@@ -106,7 +106,7 @@ class IA2CAgents(ATSCAgentCollection):
             restored_observation.append(observation[i].detach().unsqueeze(0))
             _, (self.lstm_hidden_states[i], self.lstm_cell_states[i]) = self.encoders[i].forward(observation[i].unsqueeze(0), (self.lstm_hidden_states[i], self.lstm_cell_states[i]))
             policy = self.policy_projs[i].forward(self.lstm_hidden_states[i])[0]  # Remove batch dim
-            action.append(torch.distributions.Categorical(policy).sample(1).item())  # A scalar
+            action.append(torch.distributions.Categorical(policy).sample([1]).item())  # A scalar
         if replay_buffer is not None:
             replay_buffer.model_side(restored_observation, action, prev_hidden_state, prev_cell_state)
         return action
