@@ -8,7 +8,7 @@ from random import shuffle
 from torch import nn
 from torch.optim import AdamW
 from typing import List, Optional
-from .astc_agent import ATSCAgentCollection, ReplayBuffer
+from .atsc_agent import ATSCAgentCollection, ReplayBuffer
 from .model_utils import SiluMLP
 from ..config import ATSCArguments
 from ..envs.atsc_env import TrafficSimulator
