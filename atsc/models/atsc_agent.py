@@ -34,7 +34,7 @@ class ATSCAgentCollection(ABC):
     For multi-agent methods, it is the collection of all the agents.
     For centralized training methods, it is the centralized agent.
     """
-    def __init__(self):
+    def __init__(self, args: ATSCArguments):
         pass
     
     @abstractmethod
