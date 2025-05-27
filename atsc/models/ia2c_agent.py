@@ -119,10 +119,7 @@ class IA2CAgents(ATSCAgentCollection):
     r"""
     The naive IA2C agents. Each agent has memory about the previous observations, encoded with LSTM, i.e., the states
     are $h_{t}^{(i)}$. The update rule is $h_{t}^{(i)}=LSTM(h_{t-1}^{(i)},o_{t}^{(i)};\theta_{t}^{(i)})$. The policy is
-    $\pi_{\phi_{i}}(a|h_{t}^{(i)})$ and the \\
-    critic is $V_{\rho_{i}}(h_{t}^{(i)})$.
-    
-    Notice that naive IA2C does not include neighbors' policies within the observation of an agent.
+    $\pi_{\phi_{i}}(a|h_{t}^{(i)})$ and the critic is $V_{\rho_{i}}(h_{t}^{(i)})$.
     """
     def __init__(self, args: IA2CArguments):
         self.device = args.device
