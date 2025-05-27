@@ -146,9 +146,9 @@ class RealNetController:
 
 
 class RealNetEnv(TrafficSimulator):
-    def __init__(self, config, port=0, output_path='', is_record=False, record_stat=False):
+    def __init__(self, config, seed, port=0, output_path='', is_record=False, record_stat=False):
         self.flow_rate = config.getint('flow_rate')
-        super().__init__(config, output_path, is_record, record_stat, port=port)
+        super().__init__(config, output_path, is_record, record_stat, seed, port=port)
 
     def _bfs(self, i):
         d = 0

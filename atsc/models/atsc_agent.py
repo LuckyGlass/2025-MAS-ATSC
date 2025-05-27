@@ -1,10 +1,13 @@
+from __future__ import annotations
 """
 Agent framework (`ATSCAgentCollection`) for ATSC.
 @author: Yansheng Mao
 """
 import torch
 from abc import abstractmethod, ABC
-from typing import List, Optional
+from torch.utils.tensorboard import SummaryWriter
+from typing import Any, Dict, List, Optional
+from ..config import ATSCArguments
 
 
 class ReplayBuffer(ABC):
@@ -18,6 +21,10 @@ class ReplayBuffer(ABC):
     
     @abstractmethod
     def __len__(self) -> int:
+        pass
+
+    @abstractmethod
+    def extend(self, _replay_buffer: ReplayBuffer):
         pass
 
 
@@ -42,5 +49,21 @@ class ATSCAgentCollection(ABC):
         """
     
     @abstractmethod
-    def train(self, replay_buffer: ReplayBuffer, args):
+    def train(self, replay_buffer: ReplayBuffer, args: ATSCArguments, writer: SummaryWriter, global_steps: int):
         pass
+    
+    @abstractmethod
+    def export_state_dict(self) -> Dict[str, Any]:
+        """
+        Export a dictionary, storing all the necessary data to recover the agent (collection).\\
+        The torch modules are stored as state_dict.\\
+        The exported dictionary can be loaded by load_state_dict.\\
+        This is used when saving the final model or starting parallel exploration.
+        """
+
+    @classmethod
+    @abstractmethod
+    def load_state_dict(cls, args: ATSCArguments, state_dict: Dict[str, Any]) -> ATSCAgentCollection:
+        """
+        Load the state dict. Refer to `ATSCAgentCollection.export_state_dict`.
+        """

@@ -12,8 +12,17 @@ class SiluMLP(nn.Module):
             self.layers.append(nn.Linear(h1, h2, device=device))
         self.layers.append(nn.Linear(hidden_dims[-1], output_dim, device=device))
         self.act_fn = nn.SiLU()
+        self.init_weights()
 
     def forward(self, x: torch.Tensor):
         for l in self.layers[:-1]:
             x = self.act_fn(l(x))
         return self.layers[-1](x)
+
+    def init_weights(self):
+        for layer in self.layers:
+            for n, p in layer.named_parameters():
+                if 'weight' in n:
+                    nn.init.kaiming_uniform_(p, nonlinearity='relu')
+                elif 'bias' in n:
+                    nn.init.zeros_(p)

@@ -75,9 +75,9 @@ class Node:
 
 
 class TrafficSimulator:
-    def __init__(self, config, output_path, is_record, record_stats, port=0):
+    def __init__(self, config, output_path, is_record, record_stats, seed, port=0):
         self.name = config.get('scenario')
-        self.seed = config.getint('seed')
+        self.seed = seed
         self.control_interval_sec = config.getint('control_interval_sec')
         self.yellow_interval_sec = config.getint('yellow_interval_sec')
         self.episode_length_sec = config.getint('episode_length_sec')
