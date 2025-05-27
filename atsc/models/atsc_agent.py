@@ -67,3 +67,10 @@ class ATSCAgentCollection(ABC):
         """
         Load the state dict. Refer to `ATSCAgentCollection.export_state_dict`.
         """
+
+    def reset(self):
+        """
+        Some agent collections, such as `ExtendedIA2CAgents`, have hidden states tracking the current episode.
+        `.reset` is called at the start of each episode to reset the hidden states. By default, it does nothing.
+        One should rewrite this method to reset the hidden states.
+        """

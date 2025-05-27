@@ -34,6 +34,7 @@ def explore_worker(
 ):
     tmp_state_dict_path = os.path.join(args.base_dir, 'temp_state_dict.torch')
     model = model_cls.load_state_dict(args, torch.load(tmp_state_dict_path))
+    model.reset()
     replay_buffer = replay_buffer_cls()
     with suppress_all_output():
         env = load_env(args.env_type, args.env_config_path, args.base_dir, env_seed, env_port, True)
