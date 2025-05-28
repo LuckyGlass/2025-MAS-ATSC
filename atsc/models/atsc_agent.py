@@ -6,7 +6,7 @@ Agent framework (`ATSCAgentCollection`) for ATSC.
 import torch
 from abc import abstractmethod, ABC
 from torch.utils.tensorboard import SummaryWriter
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from ..config import ATSCArguments
 
 
@@ -38,14 +38,20 @@ class ATSCAgentCollection(ABC):
         pass
     
     @abstractmethod
-    def forward(self, observation: List[torch.Tensor], replay_buffer: Optional[ReplayBuffer] = None) -> List[int]:
+    def forward(self, observation: List[torch.Tensor], replay_buffer: Optional[ReplayBuffer] = None, return_policy: bool = False) -> List[int] | Tuple[List[int], List[torch.Tensor]]:
         """
         Decide the next actions given the current observations and the termination flag.
         Args:
             observation (`List[Tensor]`):
                 The list of observations from each agents.
+            replay_buffer (`ReplayBuffer`, *optional*):
+                The replay buffer. If it is provided, the agent will push the necessary data to it. Defaults to `None`.
+            return_policy (`bool`, *optional*):
+                Whether to return the policies of the agents. Defaults to `False`.
         Returns:
-            actions (`List[int]`): The actions of the agents.
+            result (`List[int] | Tuple[List[int], List[Tensor]]`):
+            - actions (`List[int]`): The actions of the agents.
+            - policies (`List[Tensor]`): The policies of the agents, if `return_policy=True`.
         """
     
     @abstractmethod

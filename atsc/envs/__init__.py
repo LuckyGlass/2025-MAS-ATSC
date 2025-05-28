@@ -23,7 +23,7 @@ def build_data(env_type: Literal['large_grid', 'real_net'], env_config_path: str
         raise ValueError(f"Unknown env_type `{env_type}`; supported types are `large_grid` and `real_net`.")
 
 
-def load_env(env_type: Literal['large_grid', 'real_net'], env_config_path: str, base_dir: str, seed: int, port: int = 0, train_mode: bool = True):
+def load_env(env_type: Literal['large_grid', 'real_net'], env_config_path: str, base_dir: str, seed: int, port: int = 0, train_mode: bool = True, include_fingerprint: bool = False):
     config = configparser.ConfigParser()
     config.read(env_config_path)
     if env_type == 'large_grid':
@@ -32,6 +32,6 @@ def load_env(env_type: Literal['large_grid', 'real_net'], env_config_path: str, 
         env_cls = RealNetEnv
     else:
         raise ValueError(f"Unknown env_type `{env_type}`; supported types are `large_grid` and `real_net`.")
-    env = env_cls(config['ENV_CONFIG'], seed, port, base_dir)
+    env = env_cls(config['ENV_CONFIG'], seed, port, base_dir, include_fingerprint=include_fingerprint)
     env.train_mode = train_mode
     return env

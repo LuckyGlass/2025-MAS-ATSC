@@ -135,8 +135,8 @@ class IA2CAgents(ATSCAgentCollection):
         self.lstm_hidden_states = [torch.zeros((1, self.lstm_hidden_dim), device=self.device) for _ in range(self.num_agents)]
         self.lstm_cell_states = [torch.zeros((1, self.lstm_hidden_dim), device=self.device) for _ in range(self.num_agents)]
     
-    def forward(self, observation: List[torch.Tensor], replay_buffer: Optional[IA2CReplayBuffer] = None) -> List[int]:
-        prev_hidden_state, prev_cell_state, action = [], [], []
+    def forward(self, observation: List[torch.Tensor], replay_buffer: Optional[IA2CReplayBuffer] = None, return_policy: bool = False) -> List[int]:
+        prev_hidden_state, prev_cell_state, action, policies = [], [], [], []
         restored_observation = []
         for i in range(self.num_agents):
             prev_hidden_state.append(self.lstm_hidden_states[i].detach())
@@ -144,10 +144,11 @@ class IA2CAgents(ATSCAgentCollection):
             restored_observation.append(observation[i].detach().unsqueeze(0))
             _, (self.lstm_hidden_states[i], self.lstm_cell_states[i]) = self.encoders[i].forward(observation[i].unsqueeze(0), (self.lstm_hidden_states[i], self.lstm_cell_states[i]))
             policy = self.policy_projs[i].forward(self.lstm_hidden_states[i])[0]  # Remove batch dim
+            policies.append(policy)
             action.append(torch.distributions.Categorical(policy).sample([1]).item())  # A scalar
         if replay_buffer is not None:
             replay_buffer.model_side(restored_observation, action, prev_hidden_state, prev_cell_state)
-        return action
+        return (action, policies) if return_policy else action
     
     def export_state_dict(self) -> Dict[str, Any]:
         state_dict = {
@@ -227,7 +228,7 @@ class IA2CAgents(ATSCAgentCollection):
             mean_advantages = []
             for prev_hidden_state, prev_cell_state, observation, next_observation, action, reward in replay_buffer.rollout(batch_size=args.batch_size, device=args.device):
                 policies, values, next_values = self.train_forward(prev_hidden_state, prev_cell_state, observation, next_observation, reward, action)
-                log_policies = torch.log(policies)
+                log_policies = torch.log(policies + 1e-8)
                 advantages = (reward + args.gamma * next_values - values).detach()
                 log_action_prob = torch.gather(log_policies, index=action.unsqueeze(-1).to(self.device), dim=-1)[:, :, 0]
                 loss = -torch.mean(log_action_prob * advantages) - args.regularization_scale * torch.mean(torch.sum(log_policies * policies, dim=-1))

@@ -75,7 +75,8 @@ class Node:
 
 
 class TrafficSimulator:
-    def __init__(self, config, output_path, is_record, record_stats, seed, port=0):
+    def __init__(self, config, output_path, is_record, record_stats, seed, port = 0, include_fingerprint: bool = False):
+        self.include_fingerprint = include_fingerprint
         self.name = config.get('scenario')
         self.seed = seed
         self.control_interval_sec = config.getint('control_interval_sec')
@@ -264,7 +265,7 @@ class TrafficSimulator:
                         cur_state.append(self.nodes[nnode_name].wave_state)
 
                 # include fingerprints of neighbors
-                if self.agent == 'ia2c_fp':
+                if self.include_fingerprint:
                     for nnode_name in node.neighbor:
                         cur_state.append(self.nodes[nnode_name].fingerprint)
 

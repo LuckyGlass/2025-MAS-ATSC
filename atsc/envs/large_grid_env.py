@@ -46,11 +46,11 @@ class LargeGridController:
 
 
 class LargeGridEnv(TrafficSimulator):
-    def __init__(self, config, seed, port=0, output_path='', is_record=False, record_stat=False):
+    def __init__(self, config, seed, port=0, output_path='', is_record=False, record_stat=False, include_fingerprint: bool = False):
         self.peak_flow1 = config.getint('peak_flow1')
         self.peak_flow2 = config.getint('peak_flow2')
         self.init_density = config.getfloat('init_density')
-        super().__init__(config, output_path, is_record, record_stat, seed, port=port)
+        super().__init__(config, output_path, is_record, record_stat, seed, port=port, include_fingerprint=include_fingerprint)
 
     def _get_node_phase_id(self, node_name):
         return PHASE_NUM

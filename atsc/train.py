@@ -37,14 +37,18 @@ def explore_worker(
     model.reset()
     replay_buffer = replay_buffer_cls()
     with suppress_all_output():
-        env = load_env(args.env_type, args.env_config_path, args.base_dir, env_seed, env_port, True)
+        env = load_env(args.env_type, args.env_config_path, args.base_dir, env_seed, port=env_port, train_mode=True, include_fingerprint=args.include_fingerprint)
         observation = env.reset()
     observation = [torch.from_numpy(o).to(dtype=torch.float32, device=args.device) for o in observation]  # Add time dim
     global_rewards = []
     sampled_steps = 0
     while True:
         sampled_steps += 1
-        action = model.forward(observation, replay_buffer)
+        if args.include_fingerprint:
+            action, policy = model.forward(observation, replay_buffer=replay_buffer, return_policy=True)
+            env.update_fingerprint([p.cpu().numpy() for p in policy])
+        else:
+            action = model.forward(observation, replay_buffer=replay_buffer)
         next_observation, reward, done, global_reward = env.step(action)
         reward = torch.from_numpy(reward).to(dtype=torch.float32, device=args.device)
         next_observation = [torch.from_numpy(o).to(dtype=torch.float32, device=args.device) for o in next_observation]  # Add time dim
