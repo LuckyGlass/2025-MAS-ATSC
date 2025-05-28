@@ -67,7 +67,6 @@ def explore_worker(
 
 def train(args: ATSCArguments, model: ATSCAgentCollection, replay_buffer: ReplayBuffer):
     writer = SummaryWriter(log_dir=os.path.join(args.base_dir, 'tensorboard'))
-    build_data(args.env_type, args.env_config_path)
     os.makedirs(args.base_dir, exist_ok=True)
     cur_steps = 0
     env_seed = args.env_start_seed
@@ -114,6 +113,12 @@ def train(args: ATSCArguments, model: ATSCAgentCollection, replay_buffer: Replay
                     process.kill()
             for process in processes:
                 process.join()  # necessary
+            while True:
+                try:
+                    _, _, tmp_save_path, _ = replay_buffer_queue.get_nowait()
+                    os.remove(tmp_save_path)
+                except Empty:
+                    break
             log_data = {
                 'global_step': cur_steps,
                 'mean_reward': np.mean(global_rewards),

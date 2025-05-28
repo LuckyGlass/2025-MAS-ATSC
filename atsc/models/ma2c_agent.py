@@ -2,8 +2,9 @@ from __future__ import annotations
 import torch
 from copy import deepcopy
 from dataclasses import dataclass, field
+from random import shuffle
 from torch.utils.tensorboard import SummaryWriter
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from .ia2c_agent import IA2CAgents, IA2CReplayBuffer, IA2CArguments
 from ..envs.atsc_env import TrafficSimulator
 
@@ -54,9 +55,28 @@ class MA2CArguments(IA2CArguments):
 
 
 class MA2CReplayBuffer(IA2CReplayBuffer):
-    """
-    Exactly the same as `IA2CReplayBuffer`.
-    """
+    def __init__(self):
+        super().__init__()
+        self.distance = None
+    
+    def rollout(self, device: str = 'cuda', batch_size: int = 1, do_shuffle: bool = True):
+        self.distance = self.distance.to(device=device)
+        num_agents = self.action[0].shape[-1]
+        indices = list(range(len(self)))
+        if do_shuffle:
+            shuffle(indices)
+        for j in range(0, self.size, batch_size):
+            prev_hidden_state = [torch.stack([self.prev_hidden_state[i][k] for i in indices[j:j+batch_size]], dim=1).to(device) for k in range(num_agents)]
+            prev_cell_state = [torch.stack([self.prev_cell_state[i][k] for i in indices[j:j+batch_size]], dim=1).to(device) for k in range(num_agents)]
+            observation = [torch.stack([self.observation[i][k] for i in indices[j:j+batch_size]]).to(device) for k in range(num_agents)]
+            next_observation = [torch.stack([self.next_observation[i][k] for i in indices[j:j+batch_size]]).to(device) for k in range(num_agents)]
+            action = torch.stack([self.action[i] for i in indices[j:j+batch_size]]).to(device)
+            reward = torch.stack([self.reward[i] for i in indices[j:j+batch_size]]).to(device)
+            reward = reward @ self.distance.T
+            yield prev_hidden_state, prev_cell_state, observation, next_observation, action, reward
+    
+    def set_distance(self, distance: torch.Tensor):
+        self.distance = distance
 
 
 class MA2CAgents(IA2CAgents):
@@ -85,5 +105,5 @@ class MA2CAgents(IA2CAgents):
         return obj
     
     def train(self, replay_buffer: MA2CReplayBuffer, args: MA2CArguments, writer: SummaryWriter, global_steps: int):
-        replay_buffer.reward = [self.distance_discount @ reward for reward in replay_buffer.reward]
+        replay_buffer.set_distance(self.distance_discount)
         return super().train(replay_buffer, args, writer, global_steps)
