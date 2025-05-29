@@ -1,6 +1,6 @@
 # General settings
 base_dir: models/IA2C
-total_steps: 10000000
+total_steps: 5000000
 train_steps: 20000
 save_interval: 2000000
 max_episode_steps: 800
@@ -23,6 +23,6 @@ num_train_value_epochs: 3
 encoder_learning_rate: 5.0e-5
 policy_learning_rate: 5.0e-5
 value_learning_rate: 1.0e-4
-batch_size: 200
+batch_size: 1000
 regularization_scale: 0.01
 max_grad_norm: 1.0

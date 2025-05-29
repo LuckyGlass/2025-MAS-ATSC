@@ -40,7 +40,7 @@ def explore_worker(
         env = load_env(args.env_type, args.env_config_path, args.base_dir, env_seed, port=env_port, train_mode=True, include_fingerprint=args.include_fingerprint)
         observation = env.reset()
     observation = [torch.from_numpy(o).to(dtype=torch.float32, device=args.device) for o in observation]  # Add time dim
-    global_rewards = []
+    global_rewards, waits, queues = [], [], []
     sampled_steps = 0
     while True:
         sampled_steps += 1
@@ -49,10 +49,12 @@ def explore_worker(
             env.update_fingerprint([p.cpu().numpy() for p in policy])
         else:
             action = model.forward(observation, replay_buffer=replay_buffer)
-        next_observation, reward, done, global_reward = env.step(action)
+        next_observation, reward, done, global_reward, wait, queue = env.step(action)
         reward = torch.from_numpy(reward).to(dtype=torch.float32, device=args.device)
         next_observation = [torch.from_numpy(o).to(dtype=torch.float32, device=args.device) for o in next_observation]  # Add time dim
         global_rewards.append(global_reward)
+        waits.append(wait)
+        queues.append(queue)
         replay_buffer.env_side(next_observation, reward, done)
         if done or sampled_steps >= args.max_episode_steps:
             break
@@ -61,7 +63,7 @@ def explore_worker(
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     tmp_save_path = os.path.join(args.base_dir, f"temp_replay_buffer_{timestamp}_{env_port}.torch")
     torch.save(replay_buffer, tmp_save_path)
-    replay_buffer_queue.put((global_rewards, sampled_steps, tmp_save_path, env.port))
+    replay_buffer_queue.put((global_rewards, waits, queues, sampled_steps, tmp_save_path, env.port))
     logger.info(f"Port = {env_port}: Finish sampling episode of {sum(global_rewards)} reward with {sampled_steps} steps.")
 
 
@@ -76,7 +78,7 @@ def train(args: ATSCArguments, model: ATSCAgentCollection, replay_buffer: Replay
         while cur_steps < args.total_steps:
             # Explore
             processes = []
-            global_rewards = []
+            global_rewards, waits, queues = [], [], []
             model_state_dict = model.export_state_dict()
             torch.save(model_state_dict, tmp_state_dict_path)
             available_ports = list(range(args.env_simulator_port, args.env_simulator_port + args.max_explore_processes))
@@ -96,9 +98,11 @@ def train(args: ATSCArguments, model: ATSCAgentCollection, replay_buffer: Replay
                     time.sleep(0.1)
                 while True:
                     try:
-                        tmp_global_rewards, sampled_steps, tmp_save_path, tmp_port = replay_buffer_queue.get_nowait()
+                        tmp_global_rewards, tmp_waits, tmp_queues, sampled_steps, tmp_save_path, tmp_port = replay_buffer_queue.get_nowait()
                         logger.info(f"Loading results {tmp_save_path} from port {tmp_port}...")
                         global_rewards += tmp_global_rewards
+                        waits += tmp_waits
+                        queues += tmp_queues
                         cur_explore_steps += sampled_steps
                         cur_steps += sampled_steps
                         pbar.update(sampled_steps)
@@ -115,17 +119,25 @@ def train(args: ATSCArguments, model: ATSCAgentCollection, replay_buffer: Replay
                 process.join()  # necessary
             while True:
                 try:
-                    _, _, tmp_save_path, _ = replay_buffer_queue.get_nowait()
+                    tmp_save_path = replay_buffer_queue.get_nowait()[4]
                     os.remove(tmp_save_path)
                 except Empty:
                     break
             log_data = {
                 'global_step': cur_steps,
                 'mean_reward': np.mean(global_rewards),
-                'std_reward': np.std(global_rewards)
+                'std_reward': np.std(global_rewards),
+                'mean_wait': np.mean(waits),
+                'std_wait': np.std(waits),
+                'mean_queue': np.mean(queues),
+                'std_queue': np.std(queues),
             }
             writer.add_scalar('explore/mean_reward', log_data['mean_reward'], cur_steps)
             writer.add_scalar('explore/std_reward', log_data['std_reward'], cur_steps)
+            writer.add_scalar('explore/mean_wait', log_data['mean_wait'], cur_steps)
+            writer.add_scalar('explore/std_wait', log_data['std_wait'], cur_steps)
+            writer.add_scalar('explore/mean_queue', log_data['mean_queue'], cur_steps)
+            writer.add_scalar('explore/std_queue', log_data['std_queue'], cur_steps)
             logger.info(str(log_data))
             # Train
             logger.info("Start training...")

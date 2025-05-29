@@ -186,7 +186,7 @@ class TrafficSimulator:
         self._set_phase(action, 'green', rest_interval_sec)
         self._simulate(rest_interval_sec)
         state = self._get_state()
-        reward = self._measure_reward_step()
+        reward, wait, queue = self._measure_reward_step()
         done = False
         if self.cur_sec >= self.episode_length_sec:
             done = True
@@ -202,10 +202,10 @@ class TrafficSimulator:
 
         # use original rewards in test
         if not self.train_mode:
-            return state, reward, done, global_reward
+            return state, reward, done, global_reward, wait, queue
         if (self.agent == 'greedy') or (self.coop_gamma < 0):
             reward = global_reward
-        return state, reward, done, global_reward
+        return state, reward, done, global_reward, wait, queue
 
     def terminate(self):
         self.sim.close()
@@ -383,30 +383,31 @@ class TrafficSimulator:
 
     def _measure_reward_step(self):
         rewards = []
+        return_waits, return_queues = [], []
         for node_name in self.node_names:
             queues = []
             waits = []
             for ild in self.nodes[node_name].ilds_in:
-                if self.obj in ['queue', 'hybrid']:
-                    if self.name == 'atsc_real_net':
-                        cur_queue = self.sim.lane.getLastStepHaltingNumber(ild[0])
-                        cur_queue = min(cur_queue, QUEUE_MAX)
-                    else:
-                        cur_queue = self.sim.lanearea.getLastStepHaltingNumber(ild)
-                    queues.append(cur_queue)
-                if self.obj in ['wait', 'hybrid']:
-                    max_pos = 0
-                    car_wait = 0
-                    if self.name == 'atsc_real_net':
-                        cur_cars = self.sim.lane.getLastStepVehicleIDs(ild[0])
-                    else:
-                        cur_cars = self.sim.lanearea.getLastStepVehicleIDs(ild)
-                    for vid in cur_cars:
-                        car_pos = self.sim.vehicle.getLanePosition(vid)
-                        if car_pos > max_pos:
-                            max_pos = car_pos
-                            car_wait = self.sim.vehicle.getWaitingTime(vid)
-                    waits.append(car_wait)
+                # Compute queue
+                if self.name == 'atsc_real_net':
+                    cur_queue = self.sim.lane.getLastStepHaltingNumber(ild[0])
+                    cur_queue = min(cur_queue, QUEUE_MAX)
+                else:
+                    cur_queue = self.sim.lanearea.getLastStepHaltingNumber(ild)
+                queues.append(cur_queue)
+                # Compute wait
+                max_pos = 0
+                car_wait = 0
+                if self.name == 'atsc_real_net':
+                    cur_cars = self.sim.lane.getLastStepVehicleIDs(ild[0])
+                else:
+                    cur_cars = self.sim.lanearea.getLastStepVehicleIDs(ild)
+                for vid in cur_cars:
+                    car_pos = self.sim.vehicle.getLanePosition(vid)
+                    if car_pos > max_pos:
+                        max_pos = car_pos
+                        car_wait = self.sim.vehicle.getWaitingTime(vid)
+                waits.append(car_wait)
             queue = np.sum(np.array(queues)) if len(queues) else 0
             wait = np.sum(np.array(waits)) if len(waits) else 0
             if self.obj == 'queue':
@@ -416,7 +417,9 @@ class TrafficSimulator:
             else:
                 reward = - queue - self.coef_wait * wait
             rewards.append(reward)
-        return np.array(rewards)
+            return_waits.append(wait)
+            return_queues.append(queue)
+        return np.array(rewards), np.array(return_waits), np.array(return_queues)
 
     def _measure_state_step(self):
         for node_name in self.node_names:
