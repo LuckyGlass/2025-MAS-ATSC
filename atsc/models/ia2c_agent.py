@@ -182,7 +182,6 @@ class IA2CAgents(ATSCAgentCollection):
             policies.append(self.policy_projs[i](hidden_state[:, 0, :]))
             values.append(self.value_projs[i](hidden_state[:, 0, :]))
             next_values.append(self.target_value_projs[i](hidden_state[:, 1, :]))
-        policies = torch.stack(policies, dim=1)  # (batch, agent, action)
         values = torch.stack(values, dim=1)  # (batch, agent)
         next_values = torch.stack(next_values, dim=1)  # (batch, agent)
         return policies, values, next_values
@@ -211,6 +210,7 @@ class IA2CAgents(ATSCAgentCollection):
         for value_epoch in range(args.num_train_value_epochs):
             value_losses = []
             for prev_hidden_state, prev_cell_state, observation, next_observation, action, reward in replay_buffer.rollout(batch_size=args.batch_size, device=args.device):
+                value_side_optimizer.zero_grad()
                 _, values, next_values = self.train_forward(prev_hidden_state, prev_cell_state, observation, next_observation, reward, action)
                 loss = value_side_loss_fn(values, reward + args.gamma * next_values.detach())
                 value_losses.append(loss.item())
@@ -218,7 +218,6 @@ class IA2CAgents(ATSCAgentCollection):
                 if args.max_grad_norm is not None:
                     clip_grad_norm_(encoder_parameters + value_parameters, args.max_grad_norm)
                 value_side_optimizer.step()
-                value_side_optimizer.zero_grad()
         del self.target_value_projs[:]
         self.target_value_projs = deepcopy(self.value_projs)
         # Train policy
@@ -227,19 +226,24 @@ class IA2CAgents(ATSCAgentCollection):
             mean_values = []
             mean_advantages = []
             for prev_hidden_state, prev_cell_state, observation, next_observation, action, reward in replay_buffer.rollout(batch_size=args.batch_size, device=args.device):
+                policy_side_optimizer.zero_grad()
                 policies, values, next_values = self.train_forward(prev_hidden_state, prev_cell_state, observation, next_observation, reward, action)
-                log_policies = torch.log(policies + 1e-8)
                 advantages = (reward + args.gamma * next_values - values).detach()
-                log_action_prob = torch.gather(log_policies, index=action.unsqueeze(-1).to(self.device), dim=-1)[:, :, 0]
-                loss = -torch.mean(log_action_prob * advantages) - args.regularization_scale * torch.mean(torch.sum(log_policies * policies, dim=-1))
-                policy_losses.append(loss.item())
+                record_loss = 0
+                for a in range(self.num_agents):
+                    log_policies = torch.log(policies[a] + 1e-8)
+                    log_action_prob = torch.gather(log_policies, index=action[:, a, None].to(self.device), dim=-1)[:, 0]
+                    loss = -torch.mean(log_action_prob * advantages[:, a]) - args.regularization_scale * torch.mean(torch.sum(log_policies * policies[a], dim=-1))
+                    loss /= self.num_agents
+                    loss.backward()
+                    record_loss += loss.item()
+                    del loss
+                policy_losses.append(record_loss)
                 mean_values.append(torch.mean(values).item())
                 mean_advantages.append(torch.mean(advantages).item())
-                loss.backward()
                 if args.max_grad_norm is not None:
                     clip_grad_norm_(encoder_parameters + policy_parameters, args.max_grad_norm)
                 policy_side_optimizer.step()
-                policy_side_optimizer.zero_grad()
         del self.target_value_projs[:]
         train_log = {
             'mean_policy_loss': np.mean(policy_losses),

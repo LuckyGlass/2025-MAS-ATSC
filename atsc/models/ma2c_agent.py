@@ -7,28 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 from typing import Any, Dict, List
 from .ia2c_agent import IA2CAgents, IA2CReplayBuffer, IA2CArguments
 from ..envs.atsc_env import TrafficSimulator
-
-
-def get_distance(neighbor_link: List[List[int]]):
-    """Compute the shortest distance between each node pair using Floyd algorithm. The edge weights are set to 1.
-    Args:
-        neighbor_link (`List[List[int]]`):
-            `neighbor_link[i]` represents the neighbors (index) of node i.
-    Returns:
-        distance (`List[List[int]]`):
-            A square. `distance[i][j]` represents the distance between node i and node j.
-    """
-    num_nodes = len(neighbor_link)
-    distance = [[num_nodes for j in range(num_nodes)] for i in range(num_nodes)]  # initiate with INF
-    for i in range(num_nodes):
-        distance[i][i] = 0
-        for j in neighbor_link[i]:
-            distance[i][j] = 1
-    for k in range(num_nodes):
-        for i in range(num_nodes):
-            for j in range(num_nodes):
-                distance[i][j] = min(distance[i][j], distance[i][k] + distance[k][j])
-    return distance
+from .model_utils import get_distance
 
 
 @dataclass
