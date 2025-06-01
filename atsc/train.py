@@ -32,39 +32,44 @@ def explore_worker(
     env_port: int,
     replay_buffer_queue: mp.Queue
 ):
-    tmp_state_dict_path = os.path.join(args.base_dir, 'temp_state_dict.torch')
-    model = model_cls.load_state_dict(args, torch.load(tmp_state_dict_path))
-    model.reset()
-    replay_buffer = replay_buffer_cls()
-    with suppress_all_output():
-        env = load_env(args.env_type, args.env_config_path, args.base_dir, env_seed, port=env_port, train_mode=True, include_fingerprint=args.include_fingerprint)
-        observation = env.reset()
-    observation = [torch.from_numpy(o).to(dtype=torch.float32, device=args.device) for o in observation]  # Add time dim
-    global_rewards, waits, queues = [], [], []
-    sampled_steps = 0
-    while True:
-        sampled_steps += 1
-        if args.include_fingerprint:
-            action, policy = model.forward(observation, replay_buffer=replay_buffer, return_policy=True)
-            env.update_fingerprint([p.cpu().numpy() for p in policy])
-        else:
-            action = model.forward(observation, replay_buffer=replay_buffer)
-        next_observation, reward, done, global_reward, wait, queue = env.step(action)
-        reward = torch.from_numpy(reward).to(dtype=torch.float32, device=args.device)
-        next_observation = [torch.from_numpy(o).to(dtype=torch.float32, device=args.device) for o in next_observation]  # Add time dim
-        global_rewards.append(global_reward)
-        waits.append(wait)
-        queues.append(queue)
-        replay_buffer.env_side(next_observation, reward, done)
-        if done or sampled_steps >= args.max_episode_steps:
-            break
-        observation = next_observation
-    env.terminate()
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    tmp_save_path = os.path.join(args.base_dir, f"temp_replay_buffer_{timestamp}_{env_port}.torch")
-    torch.save(replay_buffer, tmp_save_path)
-    replay_buffer_queue.put((global_rewards, waits, queues, sampled_steps, tmp_save_path, env.port))
-    logger.info(f"Port = {env_port}: Finish sampling episode of {sum(global_rewards)} reward with {sampled_steps} steps.")
+    try:
+        tmp_state_dict_path = os.path.join(args.base_dir, 'temp_state_dict.torch')
+        model = model_cls.load_state_dict(args, torch.load(tmp_state_dict_path))
+        model.reset()
+        replay_buffer = replay_buffer_cls()
+        with suppress_all_output():
+            env = load_env(args.env_type, args.env_config_path, args.base_dir, env_seed, port=env_port, train_mode=True, include_fingerprint=args.include_fingerprint)
+            observation = env.reset()
+        observation = [torch.from_numpy(o).to(dtype=torch.float32, device=args.device) for o in observation]  # Add time dim
+        global_rewards, waits, queues = [], [], []
+        sampled_steps = 0
+        while True:
+            sampled_steps += 1
+            if args.include_fingerprint:
+                action, policy = model.forward(observation, replay_buffer=replay_buffer, return_policy=True)
+                env.update_fingerprint([p.cpu().numpy() for p in policy])
+            else:
+                action = model.forward(observation, replay_buffer=replay_buffer)
+            next_observation, reward, done, global_reward, wait, queue = env.step(action)
+            reward = torch.from_numpy(reward).to(dtype=torch.float32, device=args.device)
+            next_observation = [torch.from_numpy(o).to(dtype=torch.float32, device=args.device) for o in next_observation]  # Add time dim
+            global_rewards.append(global_reward)
+            waits.append(wait)
+            queues.append(queue)
+            replay_buffer.env_side(next_observation, reward, done)
+            if done or sampled_steps >= args.max_episode_steps:
+                break
+            observation = next_observation
+        env.terminate()
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        tmp_save_path = os.path.join(args.base_dir, f"temp_replay_buffer_{timestamp}_{env_port}.torch")
+        torch.save(replay_buffer, tmp_save_path)
+        replay_buffer_queue.put((global_rewards, waits, queues, sampled_steps, tmp_save_path, env.port))
+        logger.info(f"Port = {env_port}: Finish sampling episode of {sum(global_rewards)} reward with {sampled_steps} steps.")
+    except:
+        if 'env' in locals():
+            env.terminate()
+            logger.info(f"Port = {env_port}: Detect SIGTERM. Close environment...")
 
 
 def train(args: ATSCArguments, model: ATSCAgentCollection, replay_buffer: ReplayBuffer):
@@ -114,7 +119,7 @@ def train(args: ATSCArguments, model: ATSCAgentCollection, replay_buffer: Replay
                         break
             for process in processes:
                 if process.is_alive():
-                    process.kill()
+                    process.terminate()
             for process in processes:
                 process.join()  # necessary
             while True:

@@ -1,0 +1,30 @@
+# General settings
+env_type: real_net
+env_start_seed: 728
+base_dir: models/MA2C-Real
+total_steps: 5000000
+train_steps: 20000
+save_interval: 2000000
+max_episode_steps: 800
+gamma: 0.95
+env_config_path: config/config_ia2c_real.ini  # use the same env config as IA2C
+env_simulator_port: 54
+max_explore_processes: 16
+include_fingerprint: true
+
+# Agent settings
+lstm_hidden_dim: 128
+policy_proj_hidden_dims: [128]
+value_proj_hidden_dims: [128]
+device: cuda
+
+# Training settings
+num_train_policy_epochs: 1
+num_train_value_epochs: 3
+encoder_learning_rate: 5.0e-5
+policy_learning_rate: 5.0e-5
+value_learning_rate: 1.0e-4
+batch_size: 1000
+regularization_scale: 0.01
+max_grad_norm: 1.0
+neighbor_discount: 0.75
