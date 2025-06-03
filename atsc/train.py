@@ -66,10 +66,11 @@ def explore_worker(
         torch.save(replay_buffer, tmp_save_path)
         replay_buffer_queue.put((global_rewards, waits, queues, sampled_steps, tmp_save_path, env.port))
         logger.info(f"Port = {env_port}: Finish sampling episode of {sum(global_rewards)} reward with {sampled_steps} steps.")
-    except:
+    except Exception as e:
         if 'env' in locals():
             env.terminate()
             logger.info(f"Port = {env_port}: Detect SIGTERM. Close environment...")
+        raise e
 
 
 def train(args: ATSCArguments, model: ATSCAgentCollection, replay_buffer: ReplayBuffer):

@@ -1,0 +1,26 @@
+# General settings
+env_type: large_grid
+env_start_seed: 728
+base_dir: models/IC3Net-Queue
+total_steps: 1000000
+train_steps: 20000
+save_interval: 200000
+max_episode_steps: 800
+gamma: 0.95
+env_config_path: config/config_ia2c_grid.ini  # use the same env config as IA2C
+env_simulator_port: 54
+max_explore_processes: 16
+include_fingerprint: false
+
+# Agent settings
+lstm_hidden_dim: 128
+input_proj_hidden_dims: [128]
+gate_proj_hidden_dims: [128]
+policy_proj_hidden_dims: [128]
+device: cuda
+
+# Training settings
+num_train_epochs: 2
+learning_rate: 1.0e-5
+batch_size: 2000
+max_grad_norm: 1.0

@@ -8,7 +8,7 @@ from atsc.envs import load_env, build_data
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('exp_name', choices=['IA2C-Queue', 'IA2C-Queue-Real', 'MA2C-Queue', 'MA2C-Queue-Real', 'MSAC-Queue', 'MSAC-Queue-Real'])
+    parser.add_argument('exp_name', choices=['IA2C-Queue', 'IA2C-Queue-Real', 'MA2C-Queue', 'MA2C-Queue-Real', 'MSAC-Queue', 'MSAC-Queue-Real', 'IC3Net-Queue'])
     args = parser.parse_args()
     if args.exp_name == 'IA2C-Queue':
         config = load_from_yaml(IA2CArguments, 'config/ia2c_large_grid.yaml')
@@ -59,6 +59,14 @@ def main():
         config.init_from_env(env)
         agent = MSACAgents(config)
         replay_buffer = MSACReplayBuffer()
+        train(config, agent, replay_buffer)
+    elif args.exp_name == 'IC3Net-Queue':
+        config: IC3NetArguments = load_from_yaml(IC3NetArguments, 'config/ic3net_large_grid.yaml')
+        build_data(config.env_type, config.env_config_path)
+        env = load_env(config.env_type, config.env_config_path, config.base_dir, 0, config.env_simulator_port, True, include_fingerprint=config.include_fingerprint)
+        config.init_from_env(env)
+        agent = IC3NetAgents(config)
+        replay_buffer = IC3NetReplayBuffer()
         train(config, agent, replay_buffer)
 
 
