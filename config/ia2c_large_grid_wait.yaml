@@ -1,14 +1,14 @@
 # General settings
-env_type: real_net
-env_start_seed: 728
-base_dir: models/IA2C-Real
+base_dir: models/IA2C-Wait
 total_steps: 1000000
 train_steps: 20000
 save_interval: 2000000
 max_episode_steps: 800
 gamma: 0.95
-env_config_path: config/config_real_queue.ini  # use the same env config as IA2C
-env_simulator_port: 54
+env_type: large_grid
+env_config_path: config/config_grid_wait.ini
+env_simulator_port: 4
+env_start_seed: 728
 max_explore_processes: 16
 
 # Agent settings

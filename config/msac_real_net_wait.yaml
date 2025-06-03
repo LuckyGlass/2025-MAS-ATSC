@@ -1,13 +1,13 @@
 # General settings
-env_type: large_grid
+env_type: real_net
 env_start_seed: 728
-base_dir: models/MSAC-Queue
+base_dir: models/MSAC-Real-Wait
 total_steps: 1000000
 train_steps: 20000
 save_interval: 200000
 max_episode_steps: 800
 gamma: 0.95
-env_config_path: config/config_grid_queue.ini  # use the same env config as IA2C
+env_config_path: config/config_real_wait.ini  # use the same env config as IA2C
 env_simulator_port: 54
 max_explore_processes: 16
 include_fingerprint: true
