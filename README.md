@@ -49,3 +49,9 @@ Critic packages: Python 3.11, Pytorch 2.7.0 (CUDA 11.8).
 2. Install `torch==2.7.0`.
 3. The other packages are listed in `requirements.txt`: `pip install -r requirements.txt`.
 
+## Reproduce the results
+
+Please refer to `launch.py` and choose one of the `exp_name`. Execute the following command to reproduce the result.
+```shell
+python launch.py <exp_name>
+```
